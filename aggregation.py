@@ -45,18 +45,14 @@ def aggregate(
     # STUDENT: Replace or extend the aggregation below.
     # ------------------------------------------------------------------
 
-    # Use both the final token and the average sequence representation from
-    # the final transformer layer.
+    # Default: last real token of the final transformer layer.
     layer = hidden_states[-1]          # (seq_len, hidden_dim)
 
     # Find the index of the last real (non-padding) token.
     real_positions = attention_mask.nonzero(as_tuple=False)  # (n_real, 1)
     last_pos = int(real_positions[-1].item())                 # scalar index
 
-    real_tokens = layer[attention_mask.bool()]                # (n_real, hidden_dim)
-    last_feature = layer[last_pos]                            # (hidden_dim,)
-    mean_feature = real_tokens.mean(dim=0)                    # (hidden_dim,)
-    feature = torch.cat([last_feature, mean_feature], dim=0)  # (2 * hidden_dim,)
+    feature = layer[last_pos]          # (hidden_dim,)
 
     return feature
     # ------------------------------------------------------------------

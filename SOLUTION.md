@@ -101,4 +101,19 @@ Change:
 feature = torch.cat([last_feature, mean_feature], dim=0)
 ```
 
-Result: pending.
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 80.25% | 87.65% | 100.00% |
+| Validation | 71.15% | 82.95% | 66.55% |
+| Internal test | 66.35% | 79.77% | 50.84% |
+
+Decision: discarded. Concatenating last-token and mean-pooled features increased the feature dimension from 896 to 1792, but internal test accuracy dropped from 74.04% to 66.35% and internal test AUROC dropped from 74.11% to 50.84%.
+
+## Current Selected Approach
+
+- Aggregation: final transformer layer, last real token.
+- Probe: regularized MLP with one 128-unit hidden layer, dropout, and AdamW weight decay.
+- Splitting: one stratified train/validation/test split.
