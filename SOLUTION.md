@@ -128,4 +128,19 @@ Change:
 nn.Dropout(0.5)
 ```
 
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 90.85% | 93.80% | 98.33% |
+| Validation | 74.04% | 83.23% | 68.49% |
+| Internal test | 76.92% | 84.62% | 74.57% |
+
+Decision: kept. This is the best checked variant so far, improving internal test accuracy from 74.04% to 76.92% and internal test AUROC from 74.11% to 74.57%.
+
+### Accuracy-tuned threshold
+
+Reason: `fit_hyperparameters` currently tunes the prediction threshold for validation F1, while the README states that the primary competition metric is accuracy. This experiment keeps the stronger-dropout MLP and tunes the threshold for validation accuracy instead.
+
 Result: pending.
