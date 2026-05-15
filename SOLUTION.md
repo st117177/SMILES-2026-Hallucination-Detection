@@ -171,4 +171,20 @@ Change:
 layer = hidden_states[16]
 ```
 
-Result: pending.
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 70.06% | 82.40% | 99.99% |
+| Validation | 70.19% | 82.49% | 64.01% |
+| Internal test | 70.19% | 82.49% | 68.32% |
+
+Decision: discarded. Layer 16 caused the classifier to behave close to the majority-class baseline for accuracy and F1, dropping internal test accuracy from 76.92% to 70.19% and internal test AUROC from 74.57% to 68.32%.
+
+## Final Selected Approach After Experiments
+
+- Aggregation: final transformer layer, last real token.
+- Probe: MLP with a 128-unit hidden layer, ReLU, `Dropout(0.5)`, and `AdamW(weight_decay=1e-2)`.
+- Threshold tuning: validation F1.
+- Splitting: one stratified train/validation/test split.
