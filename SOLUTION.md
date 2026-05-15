@@ -117,3 +117,15 @@ Decision: discarded. Concatenating last-token and mean-pooled features increased
 - Aggregation: final transformer layer, last real token.
 - Probe: regularized MLP with one 128-unit hidden layer, dropout, and AdamW weight decay.
 - Splitting: one stratified train/validation/test split.
+
+### Stronger dropout MLP
+
+Reason: the regularized MLP still has very high train AUROC, so this experiment increases dropout from 0.3 to 0.5 while keeping the same architecture and optimizer.
+
+Change:
+
+```python
+nn.Dropout(0.5)
+```
+
+Result: pending.
