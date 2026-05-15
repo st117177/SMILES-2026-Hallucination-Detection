@@ -143,4 +143,20 @@ Decision: kept. This is the best checked variant so far, improving internal test
 
 Reason: `fit_hyperparameters` currently tunes the prediction threshold for validation F1, while the README states that the primary competition metric is accuracy. This experiment keeps the stronger-dropout MLP and tunes the threshold for validation accuracy instead.
 
-Result: pending.
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 85.45% | 90.57% | 98.16% |
+| Validation | 74.04% | 83.64% | 68.76% |
+| Internal test | 75.96% | 84.28% | 74.11% |
+
+Decision: discarded. Tuning the threshold for validation accuracy did not improve the selected model: internal test accuracy dropped from 76.92% to 75.96%, and internal test AUROC dropped from 74.57% to 74.11%.
+
+## Final Selected Approach
+
+- Aggregation: final transformer layer, last real token.
+- Probe: MLP with a 128-unit hidden layer, ReLU, `Dropout(0.5)`, and `AdamW(weight_decay=1e-2)`.
+- Threshold tuning: validation F1.
+- Splitting: one stratified train/validation/test split.
