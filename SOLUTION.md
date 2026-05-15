@@ -80,4 +80,25 @@ self._net = nn.Sequential(
 
 Training uses `AdamW` with `weight_decay=1e-2`.
 
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 86.69% | 91.33% | 99.50% |
+| Validation | 73.08% | 83.13% | 66.81% |
+| Internal test | 74.04% | 83.02% | 74.11% |
+
+Decision: kept for the next experiment. Internal test accuracy matched the baseline, validation accuracy improved from 72.12% to 73.08%, and internal test AUROC improved from 73.40% to 74.11%.
+
+### Last-token plus mean pooling aggregation
+
+Reason: the baseline uses only the final token from the final transformer layer. Hallucination evidence may be distributed across the whole prompt/response sequence, so the next experiment concatenates the final-token representation with mean-pooled token representations from the same layer.
+
+Change:
+
+```python
+feature = torch.cat([last_feature, mean_feature], dim=0)
+```
+
 Result: pending.
