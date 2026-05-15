@@ -160,3 +160,15 @@ Decision: discarded. Tuning the threshold for validation accuracy did not improv
 - Probe: MLP with a 128-unit hidden layer, ReLU, `Dropout(0.5)`, and `AdamW(weight_decay=1e-2)`.
 - Threshold tuning: validation F1.
 - Splitting: one stratified train/validation/test split.
+
+### Middle-late layer aggregation
+
+Reason: several hidden-state hallucination probing papers report that truthfulness and hallucination signals often peak in middle or middle-late transformer layers rather than the final layer. This experiment keeps last-token pooling and the selected stronger-dropout MLP, but changes the selected layer from the final layer to layer 16.
+
+Change:
+
+```python
+layer = hidden_states[16]
+```
+
+Result: pending.

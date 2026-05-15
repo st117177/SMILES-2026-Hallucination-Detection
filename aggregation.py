@@ -45,8 +45,9 @@ def aggregate(
     # STUDENT: Replace or extend the aggregation below.
     # ------------------------------------------------------------------
 
-    # Default: last real token of the final transformer layer.
-    layer = hidden_states[-1]          # (seq_len, hidden_dim)
+    # Use a middle-late transformer layer. Prior hidden-state probing work
+    # often finds truthfulness signals before the final generation layer.
+    layer = hidden_states[16]          # (seq_len, hidden_dim)
 
     # Find the index of the last real (non-padding) token.
     real_positions = attention_mask.nonzero(as_tuple=False)  # (n_real, 1)
