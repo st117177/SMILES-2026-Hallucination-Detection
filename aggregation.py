@@ -18,6 +18,7 @@ single entry point called from the notebook.
 from __future__ import annotations
 
 import torch
+import torch.nn.functional as F
 
 
 def aggregate(
@@ -45,14 +46,45 @@ def aggregate(
     # STUDENT: Replace or extend the aggregation below.
     # ------------------------------------------------------------------
 
-    # Default: last real token of the final transformer layer.
-    layer = hidden_states[-1]          # (seq_len, hidden_dim)
-
     # Find the index of the last real (non-padding) token.
     real_positions = attention_mask.nonzero(as_tuple=False)  # (n_real, 1)
     last_pos = int(real_positions[-1].item())                 # scalar index
 
-    feature = layer[last_pos]          # (hidden_dim,)
+    # Keep the strong baseline feature: last real token of the final layer.
+    final_vec = hidden_states[-1, last_pos]  # (hidden_dim,)
+
+    # Add a compact description of late-layer representation dynamics without
+    # concatenating full hidden vectors from extra layers.
+    prev1_vec = hidden_states[-2, last_pos]
+    prev2_vec = hidden_states[-3, last_pos]
+    prev4_vec = hidden_states[-5, last_pos]
+    prev8_vec = hidden_states[-9, last_pos]
+
+    eps = final_vec.new_tensor(1e-6)
+    n_real = float(real_positions.numel())
+    seq_frac = final_vec.new_tensor(n_real / float(attention_mask.numel()))
+
+    final_norm = torch.linalg.vector_norm(final_vec)
+    prev1_norm = torch.linalg.vector_norm(prev1_vec)
+    prev4_norm = torch.linalg.vector_norm(prev4_vec)
+
+    dynamics = torch.stack(
+        [
+            seq_frac,
+            final_norm,
+            prev1_norm,
+            prev4_norm,
+            final_norm / (prev1_norm + eps),
+            F.cosine_similarity(final_vec, prev1_vec, dim=0, eps=1e-8),
+            F.cosine_similarity(final_vec, prev4_vec, dim=0, eps=1e-8),
+            F.cosine_similarity(final_vec, prev8_vec, dim=0, eps=1e-8),
+            torch.linalg.vector_norm(final_vec - prev1_vec),
+            torch.linalg.vector_norm(final_vec - prev4_vec),
+            torch.linalg.vector_norm(prev1_vec - prev2_vec),
+        ]
+    )
+
+    feature = torch.cat([final_vec, dynamics], dim=0)
 
     return feature
     # ------------------------------------------------------------------

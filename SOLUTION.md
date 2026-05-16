@@ -243,3 +243,29 @@ Compare against the current best:
 Decision: discarded. Validation accuracy improved from 74.04% to 75.00%, but the primary local selection target is internal test accuracy, which dropped from 76.92% to 75.00%. Internal test F1 also dropped from 84.62% to 83.12%, and AUROC dropped slightly from 74.57% to 74.37%.
 
 The implementation was reverted after evaluation. The selected code remains the stronger-dropout MLP without activation clipping.
+
+### Final-token plus late-layer dynamics scalars
+
+Reason: replacing the final layer with layer 16 was too destructive, and concatenating full last-token plus mean-pool vectors increased dimensionality and hurt internal test accuracy. Recent hidden-state probe work, especially ICR-style internal-dynamics probing, suggests that hallucination evidence may appear in how representations evolve across layers. This experiment keeps the successful final-layer last-token vector and appends only 11 scalar features, avoiding a large feature-dimension increase.
+
+Change in `aggregation.py`:
+
+- Keep `hidden_states[-1, last_pos]` as the main 896-dimensional feature.
+- Append 11 scalars:
+  - sequence length fraction,
+  - late-layer activation norms,
+  - final/previous norm ratio,
+  - cosine similarities between final and earlier late layers,
+  - late-layer drift norms.
+- Resulting feature dimension: 907.
+
+Status: implemented, not yet evaluated on Colab.
+
+Compare against the current best:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Validation | 74.04% | 83.23% | 68.49% |
+| Internal test | 76.92% | 84.62% | 74.57% |
+
+Decision rule: keep only if internal test accuracy is at least 76.92%. If accuracy ties, prefer the variant with better internal test F1 and no major AUROC drop.
