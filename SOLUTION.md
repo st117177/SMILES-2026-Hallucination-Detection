@@ -259,7 +259,14 @@ Change in `aggregation.py`:
   - late-layer drift norms.
 - Resulting feature dimension: 907.
 
-Status: implemented, not yet evaluated on Colab.
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 86.69% | 91.28% | 98.29% |
+| Validation | 74.04% | 83.64% | 67.70% |
+| Internal test | 75.96% | 84.08% | 74.83% |
 
 Compare against the current best:
 
@@ -268,4 +275,6 @@ Compare against the current best:
 | Validation | 74.04% | 83.23% | 68.49% |
 | Internal test | 76.92% | 84.62% | 74.57% |
 
-Decision rule: keep only if internal test accuracy is at least 76.92%. If accuracy ties, prefer the variant with better internal test F1 and no major AUROC drop.
+Decision: discarded. The scalar dynamics features improved internal test AUROC from 74.57% to 74.83%, but internal test accuracy dropped from 76.92% to 75.96%, and F1 dropped from 84.62% to 84.08%. Since the target is accuracy, this is not selected.
+
+The implementation was reverted after evaluation. The selected aggregation remains final transformer layer, last real token.
