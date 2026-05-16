@@ -188,3 +188,49 @@ Decision: discarded. Layer 16 caused the classifier to behave close to the major
 - Probe: MLP with a 128-unit hidden layer, ReLU, `Dropout(0.5)`, and `AdamW(weight_decay=1e-2)`.
 - Threshold tuning: validation F1.
 - Splitting: one stratified train/validation/test split.
+
+## Research Notes for Next Experiments
+
+Recent work supports using frozen LLM hidden states as cheap hallucination/truthfulness signals:
+
+- Azaria and Mitchell, "The Internal State of an LLM Knows When It's Lying" (`https://arxiv.org/abs/2304.13734`): trains a classifier on hidden-layer activations and reports 71% to 83% truth/false accuracy, motivating lightweight supervised probes on internal states.
+- INSIDE (`https://arxiv.org/abs/2402.03744`): argues that internal states retain dense semantic information useful for hallucination detection and specifically studies test-time feature clipping to truncate extreme activations.
+- Semantic Entropy Probes (`https://arxiv.org/abs/2406.15927`): approximates semantic uncertainty from hidden states of a single generation, avoiding expensive multi-sample semantic entropy.
+- LLM-Check (`https://papers.neurips.cc/paper_files/paper/2024/file/3c1e1fdf305195cd620c118aaa9717ad-Paper-Conference.pdf`): focuses on detecting hallucination from a single LLM response using hidden activations and related internal signals without extra generations or retrieval.
+- ICR Probe (`https://aclanthology.org/2025.acl-long.880.pdf`): reports strong Qwen2.5 hallucination-detection results using lightweight MLP probes over layer-wise internal dynamics.
+- PRISM (`https://aclanthology.org/2025.acl-long.1058.pdf`): shows prompt-guided internal states can make truthfulness structure more salient, but this is less compatible here because `solution.py` fixes the prompt/response extraction path.
+
+Practical experiment plan, prioritized for accuracy and low overfitting risk:
+
+1. Standardized activation clipping in `probe.py`. This keeps the successful final-token feature unchanged, adds no parameters, and should reduce sensitivity to outlier activation coordinates on the 689-sample dataset.
+2. If clipping helps or is neutral, try a compact layer-dynamics aggregation: final last-token vector plus a small number of scalar features such as final/penultimate norm ratio and cosine drift. Avoid another large 1792+ dimensional concatenation because last-token plus mean pooling already overfit and hurt accuracy.
+3. Try validation-stable threshold selection only after probe-side regularization is settled. Pure accuracy threshold tuning was already worse, so do not repeat it without a tie-breaker such as validation F1 or a minimum positive-rate constraint.
+4. Do not prioritize prompt-guided features, multi-generation semantic entropy, retrieval, or larger probes. They are either incompatible with the fixed pipeline, too expensive for a T4, or too easy to overfit.
+
+### Standardized activation clipping
+
+Reason: the current best model still shows a large train/test gap, and hidden-state probes on small datasets can latch onto extreme activation coordinates. INSIDE explicitly explores feature clipping for internal-state hallucination detection. Clipping after `StandardScaler` is a cheap robustification step that does not change Qwen extraction, feature dimension, split logic, or the selected MLP architecture.
+
+Change in `probe.py`:
+
+```python
+self._clip_value = 3.0
+
+def _scale_and_clip(self, X, fit=False):
+    if fit:
+        X_scaled = self._scaler.fit_transform(X)
+    else:
+        X_scaled = self._scaler.transform(X)
+    return np.clip(X_scaled, -self._clip_value, self._clip_value)
+```
+
+Status: implemented, not yet evaluated on Colab.
+
+Compare against the current best:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Validation | 74.04% | 83.23% | 68.49% |
+| Internal test | 76.92% | 84.62% | 74.57% |
+
+Decision rule: keep this experiment only if internal test accuracy is at least 76.92% and validation accuracy does not fall materially. Prefer accuracy over AUROC, but reject a variant with a clear AUROC collapse because that suggests unstable ranking rather than a better classifier.

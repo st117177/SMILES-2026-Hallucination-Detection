@@ -29,7 +29,16 @@ class HallucinationProbe(nn.Module):
         super().__init__()
         self._net: nn.Sequential | None = None  # built lazily in fit()
         self._scaler = StandardScaler()
+        self._clip_value = 3.0
         self._threshold: float = 0.5  # tuned by fit_hyperparameters()
+
+    def _scale_and_clip(self, X: np.ndarray, fit: bool = False) -> np.ndarray:
+        """Standardize features and clip extreme activation coordinates."""
+        if fit:
+            X_scaled = self._scaler.fit_transform(X)
+        else:
+            X_scaled = self._scaler.transform(X)
+        return np.clip(X_scaled, -self._clip_value, self._clip_value)
 
     # ------------------------------------------------------------------
     # STUDENT: Replace or extend the network definition below.
@@ -80,7 +89,7 @@ class HallucinationProbe(nn.Module):
         Returns:
             ``self`` (for method chaining).
         """
-        X_scaled = self._scaler.fit_transform(X)
+        X_scaled = self._scale_and_clip(X, fit=True)
 
         self._build_network(X_scaled.shape[1])
 
@@ -174,7 +183,7 @@ class HallucinationProbe(nn.Module):
             estimated probability of the hallucinated class (label 1).
             Used to compute AUROC.
         """
-        X_scaled = self._scaler.transform(X)
+        X_scaled = self._scale_and_clip(X)
         X_t = torch.from_numpy(X_scaled).float()
         with torch.no_grad():
             logits = self(X_t)
