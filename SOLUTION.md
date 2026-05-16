@@ -224,7 +224,14 @@ def _scale_and_clip(self, X, fit=False):
     return np.clip(X_scaled, -self._clip_value, self._clip_value)
 ```
 
-Status: implemented, not yet evaluated on Colab.
+Metrics:
+
+| Split | Accuracy | F1 | AUROC |
+|---|---:|---:|---:|
+| Majority baseline | 70.19% | 82.49% | N/A |
+| Train | 88.36% | 92.24% | 98.34% |
+| Validation | 75.00% | 83.95% | 67.87% |
+| Internal test | 75.00% | 83.12% | 74.37% |
 
 Compare against the current best:
 
@@ -233,4 +240,6 @@ Compare against the current best:
 | Validation | 74.04% | 83.23% | 68.49% |
 | Internal test | 76.92% | 84.62% | 74.57% |
 
-Decision rule: keep this experiment only if internal test accuracy is at least 76.92% and validation accuracy does not fall materially. Prefer accuracy over AUROC, but reject a variant with a clear AUROC collapse because that suggests unstable ranking rather than a better classifier.
+Decision: discarded. Validation accuracy improved from 74.04% to 75.00%, but the primary local selection target is internal test accuracy, which dropped from 76.92% to 75.00%. Internal test F1 also dropped from 84.62% to 83.12%, and AUROC dropped slightly from 74.57% to 74.37%.
+
+The implementation was reverted after evaluation. The selected code remains the stronger-dropout MLP without activation clipping.
